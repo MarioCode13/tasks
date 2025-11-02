@@ -1,23 +1,71 @@
 package com.tasks.tasks.services.impl;
 
 import com.tasks.tasks.domain.entities.Task;
+import com.tasks.tasks.domain.entities.TaskList;
+import com.tasks.tasks.domain.entities.TaskPriority;
+import com.tasks.tasks.domain.entities.TaskStatus;
+import com.tasks.tasks.repositories.TaskListRepository;
 import com.tasks.tasks.repositories.TaskRepository;
 import com.tasks.tasks.services.TaskService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class TaskServiceImpl implements TaskService {
     private final TaskRepository taskRepository;
+    private final TaskListRepository taskListRepository;
 
-    public TaskServiceImpl(TaskRepository taskRepository) {
+    public TaskServiceImpl(TaskRepository taskRepository, TaskListRepository taskListRepository) {
         this.taskRepository = taskRepository;
+        this.taskListRepository = taskListRepository;
     }
 
     @Override
     public List<Task> listTasks(UUID taskListId) {
         return taskRepository.findByTaskListId(taskListId);
     }
+
+    @Override
+    public Task createTask(UUID taskListId, Task task) {
+        if (null != task.getId()){
+            throw new IllegalArgumentException("Task id already exists");
+        }
+        if (null == task.getTitle() || task.getTitle().isBlank()){
+            throw new IllegalArgumentException("Task needs a title");
+        }
+        TaskPriority taskPriority = Optional.ofNullable(task.getPriority())
+                .orElse(TaskPriority.MEDIUM);
+        TaskStatus taskStatus = TaskStatus.OPEN;
+        TaskList taskList = taskListRepository.findById(taskListId)
+                .orElseThrow(() -> new IllegalArgumentException("Task list does not exist"));
+        LocalDateTime now = LocalDateTime.now();
+
+        Task taskToSave = new Task(
+                null,
+                task.getTitle(),
+                task.getDescription(),
+                task.getDueDate(),
+                taskStatus,
+                taskPriority,
+                taskList,
+                now,
+                now
+        );
+
+        return taskRepository.save(taskToSave);
+    }
+
+    @Override
+    public Optional<Task> getTask(UUID taskListId, UUID taskId) {
+        return taskRepository.findByTaskListIdAndId(taskId, taskListId);
+    }
+
+
+
+
+
 }
