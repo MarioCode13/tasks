@@ -2,6 +2,7 @@ package com.tasks.tasks.repositories;
 
 import com.tasks.tasks.domain.entities.Task;
 import com.tasks.tasks.domain.entities.TaskStatus;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -15,5 +16,5 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
 
     Optional<Task> findByTaskListIdAndId(UUID taskListId, UUID id);
 
-
+    void deleteByTaskListIdAndId(UUID taskListId, UUID id);
 }

@@ -7,10 +7,12 @@ import com.tasks.tasks.domain.entities.TaskStatus;
 import com.tasks.tasks.repositories.TaskListRepository;
 import com.tasks.tasks.repositories.TaskRepository;
 import com.tasks.tasks.services.TaskService;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,6 +31,7 @@ public class TaskServiceImpl implements TaskService {
         return taskRepository.findByTaskListId(taskListId);
     }
 
+    @Transactional
     @Override
     public Task createTask(UUID taskListId, Task task) {
         if (null != task.getId()){
@@ -64,8 +67,43 @@ public class TaskServiceImpl implements TaskService {
         return taskRepository.findByTaskListIdAndId(taskId, taskListId);
     }
 
+    @Override
+    public Task updateTask(UUID taskListId, UUID taskId, Task task) {
+        if (null == task.getId()){
+            throw new IllegalArgumentException("Task must contain id");
+        }
+        if (!Objects.equals(task.getId(), taskId)){
+            throw new IllegalArgumentException("Task id change not permitted");
+        }
+        if (null == task.getTitle() || task.getTitle().isBlank()){
+            throw new IllegalArgumentException("Task needs a title");
+        }
+        if (null == task.getPriority()){
+            throw new IllegalArgumentException("Task needs a priority");
+        }
+        if (null == task.getStatus()){
+            throw new IllegalArgumentException("Task needs a status");
+        }
+        Task existingTask = taskRepository.findByTaskListIdAndId(taskId, taskListId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        existingTask.setTitle(task.getTitle());
+        existingTask.setDescription(task.getDescription());
+        existingTask.setDueDate(task.getDueDate());
+        existingTask.setPriority(task.getPriority());
+        existingTask.setStatus(task.getStatus());
+        existingTask.setUpdated(LocalDateTime.now());
 
+        return taskRepository.save(existingTask);
+    }
 
+    @Transactional
+    @Override
+    public void deleteTask(UUID taskListId, UUID taskId) {
+        if (null == taskId){
+            throw new IllegalArgumentException("Task must contain id");
+        }
+        taskRepository.deleteByTaskListIdAndId(taskListId, taskId);
+    }
 
 
 }
